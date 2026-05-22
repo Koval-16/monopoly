@@ -2,11 +2,13 @@ package com.game.monopoly.engine;
 
 // Importy klas z innych pakietów, którymi zarządza Silnik
 import com.game.monopoly.board.Board;
+import com.game.monopoly.board.purchase.PurchaseField;
 import com.game.monopoly.card.Deck;
 import com.game.monopoly.economy.Bank;
 import com.game.monopoly.player.Player;
 import com.game.monopoly.player.state.ActiveState;
 import com.game.monopoly.player.state.BankruptState;
+import com.game.monopoly.economy.Auction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,7 @@ public class GameEngine {
     private Player currentPlayer;
     private Deck chanceDeck;
     private Deck communityChestDeck;
+    private Auction currentAuction;
 
     // Lista interfejsów do komunikacji z GUI
     private List<GameObserver> observers;
@@ -123,6 +126,19 @@ public class GameEngine {
 
         this.currentPlayer = players.get(nextIndex);
         notifyMessage("Kolejka przechodzi na gracza: " + currentPlayer.getName());
+    }
+
+    public void startAuction(PurchaseField property, Player initiator) {
+        this.currentAuction = new com.game.monopoly.economy.Auction(property, this.players, initiator);
+        notifyMessage("Rozpoczyna się licytacja o: " + property.getName() + ". Cena wywoławcza: " + currentAuction.getCurrentBid() + "$");
+    }
+
+    public Auction getCurrentAuction() {
+        return this.currentAuction;
+    }
+
+    public void clearAuction() {
+        this.currentAuction = null;
     }
 
     public Board getBoard() { return board; }
