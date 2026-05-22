@@ -1,17 +1,18 @@
 package com.game.monopoly.board.purchase;
 
+import com.game.monopoly.engine.GameEngine;
 import com.game.monopoly.engine.TurnContext;
 
 public class StreetField extends PurchaseField {
 
-    // Dodane atrybuty specyficzne dla ulic (domki, hotele, przynależność do koloru)
+    // --- ATRYBUTY ---
     private int houseCount;
     private boolean hasHotel;
     private int housePrice;
     private String colorGroup;
     private int[] rentPrices;
-    private int buildingCost;
 
+    // --- KONSTRUKTOR ---
     public StreetField(String name, int position, int price, int housePrice, String colorGroup, int[] rentPrices) {
         super(name, position, price);
         this.houseCount = 0;
@@ -24,6 +25,8 @@ public class StreetField extends PurchaseField {
         }
         this.rentPrices = rentPrices;
     }
+
+    // --- FUNKCJE (Metody) ---
 
     @Override
     protected int calculateRent(TurnContext ctx) {
@@ -68,6 +71,114 @@ public class StreetField extends PurchaseField {
 
         return count == requiredAmount;
     }
+
+    /**
+     * Próba wybudowania domku na tej ulicy.
+     */
+    public boolean buildHouse(GameEngine engine) {
+        // 1. Sprawdzenie, czy gracz posiada całą dzielnicę (tzw. Monopol)
+        if (!ownsAllInColorGroup()) {
+            engine.notifyMessage("Nie możesz budować. Musisz posiadać wszystkie ulice w kolorze: " + getColorGroup());
+            return false;
+        }
+        // 2. Sprawdzenie limitów budynków na polu
+        if (this.hasHotel) {
+            engine.notifyMessage("Na polu " + getName() + " stoi już hotel. Nie możesz budować domków.");
+            return false;
+        }
+        if (this.houseCount >= 4) {
+            engine.notifyMessage("Na polu " + getName() + " stoją już 4 domki. Możesz teraz zbudować tylko hotel.");
+            return false;
+        }
+        // 3. Sprawdzenie funduszy i dostępności domków w Banku
+        if (getOwner().getBalance() >= this.housePrice) {
+            if (engine.getBank().requestHouse()) {
+                // Bank pobiera pieniądze, a my zwiększamy licznik domków
+                engine.getBank().receiveMoney(getOwner(), this.housePrice);
+                this.houseCount++;
+                engine.notifyMessage(getOwner().getName() + " buduje domek na " + getName() + ". Liczba domków: " + this.houseCount);
+                return true;
+            } else {
+                engine.notifyMessage("Bank nie posiada już wolnych domków!");
+                return false;
+            }
+        } else {
+            engine.notifyMessage(getOwner().getName() + " nie ma wystarczająco pieniędzy na budowę domku (" + this.housePrice + "$).");
+            return false;
+        }
+    }
+
+    /**
+     * Próba wybudowania hotelu na tej ulicy.
+     */
+    public boolean buildHotel(GameEngine engine) {
+        if (this.hasHotel) {
+            engine.notifyMessage("Na polu " + getName() + " stoi już hotel.");
+            return false;
+        }
+        if (this.houseCount < 4) {
+            engine.notifyMessage("Aby zbudować hotel na " + getName() + ", musisz najpierw postawić 4 domki.");
+            return false;
+        }
+        if (getOwner().getBalance() >= this.housePrice) {
+            if (engine.getBank().requestHotel()) {
+                // Budowa hotelu oznacza oddanie 4 domków do banku
+                for (int i = 0; i < 4; i++) {
+                    engine.getBank().returnHouse();
+                }
+
+                engine.getBank().receiveMoney(getOwner(), this.housePrice);
+                this.houseCount = 0; // Zerujemy domki
+                this.hasHotel = true; // Stawiamy hotel
+                engine.notifyMessage(getOwner().getName() + " buduje potężny HOTEL na " + getName() + "!");
+                return true;
+            } else {
+                engine.notifyMessage("Bank nie posiada już wolnych hoteli!");
+                return false;
+            }
+        } else {
+            engine.notifyMessage(getOwner().getName() + " nie ma wystarczająco pieniędzy na budowę hotelu (" + this.housePrice + "$).");
+            return false;
+        }
+    }
+
+    /**
+     * Sprzedaż domku z powrotem do banku za połowę ceny.
+     */
+    public boolean sellHouse(GameEngine engine) {
+        if (this.houseCount > 0 && !this.hasHotel) {
+            this.houseCount--;
+            engine.getBank().returnHouse();
+
+            int refund = this.housePrice / 2;
+            engine.getBank().payOutMoney(getOwner(), refund);
+
+            engine.notifyMessage(getOwner().getName() + " sprzedaje domek z " + getName() + " za " + refund + "$.");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Sprzedaż hotelu z powrotem do banku za połowę ceny.
+     */
+    public boolean sellHotel(GameEngine engine) {
+        if (this.hasHotel) {
+            // Zgodnie z zasadami, sprzedaż hotelu oddaje graczowi 4 domki i zwraca połowę ceny postawienia hotelu.
+            this.hasHotel = false;
+            this.houseCount = 4;
+            engine.getBank().returnHotel();
+
+            int refund = this.housePrice / 2;
+            engine.getBank().payOutMoney(getOwner(), refund);
+
+            engine.notifyMessage(getOwner().getName() + " sprzedaje hotel z " + getName() + " za " + refund + "$. Na ulicę wracają 4 domki.");
+            return true;
+        }
+        return false;
+    }
+
+    // --- GETTERY ---
 
     public int getHouseCount() {
         return this.houseCount;
