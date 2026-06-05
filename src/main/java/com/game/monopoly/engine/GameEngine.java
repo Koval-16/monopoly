@@ -141,6 +141,10 @@ public class GameEngine {
         this.currentAuction = null;
     }
 
+    public void setDice(Dice dice){
+        this.dice = dice;
+    }
+
     public Board getBoard() { return board; }
     public Bank getBank() { return bank; }
     public Dice getDice() { return dice; }

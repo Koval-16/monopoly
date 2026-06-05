@@ -84,6 +84,10 @@ public class Player {
         this.position = position;
     }
 
+    public void setBalance(int balance){
+        this.balance = balance;
+    }
+
     public void addProperty(PurchaseField property) {
         if (property != null && !this.properties.contains(property)) {
             this.properties.add(property);

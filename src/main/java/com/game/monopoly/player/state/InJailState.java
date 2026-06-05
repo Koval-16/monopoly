@@ -40,7 +40,7 @@ public class InJailState implements PlayerState {
             player.changeState(activeState);
             engine.notifyPlayerStateChanged(player);
 
-            // Rozegranie normalnej, pełnej tury (rzut z prawem do kolejnego dubletu)
+            // Rozegranie normalnej, pełnej tury (rzut z prawem do kolejnego dubletu)6
             activeState.playTurn(player, engine);
             return;
         }
