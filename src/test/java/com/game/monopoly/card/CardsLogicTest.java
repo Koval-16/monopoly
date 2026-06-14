@@ -22,10 +22,10 @@ class CardsLogicTest {
 
     @Test
     void testBuildingTaxCardCalculatesCorrectTax() {
-        // Arrange: Tworzymy dwie ulice
+        // Arrange: Tworzymy dwie ulice z dzielnicy Brązowej (wymaga tylko 2 do monopolu!)
         int[] rentPrices = {10, 50, 150, 450, 625, 750};
-        StreetField street1 = new StreetField("Ulica 1", 1, 100, 50, "Czerwona", rentPrices);
-        StreetField street2 = new StreetField("Ulica 2", 3, 100, 50, "Czerwona", rentPrices);
+        StreetField street1 = new StreetField("Ulica 1", 1, 100, 50, "Brązowa", rentPrices);
+        StreetField street2 = new StreetField("Ulica 2", 3, 100, 50, "Brązowa", rentPrices);
 
         // Przypisujemy ulice do gracza
         street1.setOwner(player);
@@ -33,23 +33,26 @@ class CardsLogicTest {
         player.addProperty(street1);
         player.addProperty(street2);
 
-        // "Oszukujemy" system budowania na potrzeby testu, stawiając budynki ręcznie
-        // (Zależnie od dostępnych metod, możemy użyć buildHouse lub założyć, że
-        // po prostu mamy metodę w teście sprawdzającą podatki. Symulujemy, że gracz ma:
-        // Na Ulicy 1: 3 domki
-        // Na Ulicy 2: 1 hotel
-        for (int i = 0; i < 3; i++) street1.buildHouse(engine);
-        street2.buildHotel(engine); // Zakładamy, że zbudowano hotel
+        // Budujemy legalnie, zgodnie z naszymi zasadami, żeby uniknąć blokad systemowych!
 
-        // Zapisujemy stan konta przed zapłatą podatku
-        // Uwaga: budowanie mogło pobrać pieniądze, więc sprawdzamy aktualny stan!
+        // Na Ulicy 1: Stawiamy 3 domki
+        for (int i = 0; i < 3; i++) {
+            street1.buildHouse(engine);
+        }
+
+        // Na Ulicy 2: Aby postawić hotel, musimy najpierw postawić 4 domki
+        for (int i = 0; i < 4; i++) {
+            street2.buildHouse(engine);
+        }
+        street2.buildHotel(engine); // Dopiero teraz z powodzeniem stawiamy hotel
+
+        // Zapisujemy stan konta PO ZBUDOWANIU, a przed zapłatą podatku
         int balanceBeforeTax = player.getBalance();
 
         // Tworzymy kartę: 40$ za każdy domek, 115$ za każdy hotel
-        // (W Monopoly to klasyczna karta "Remont ulic")
         BuildingTaxCard taxCard = new BuildingTaxCard("Płacisz za remont: 40$ za domek, 115$ za hotel", 40, 115);
 
-        // Act: Gracz wyciąga kartę i system wykonuje jej akcję
+        // Act: Gracz wyciąga kartę i system pobiera podatek
         taxCard.executeAction(player, engine);
 
         // Assert:

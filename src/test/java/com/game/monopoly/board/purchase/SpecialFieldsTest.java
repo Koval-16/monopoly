@@ -71,6 +71,10 @@ class SpecialFieldsTest {
         // Arrange: Ustawiamy sztywny wynik rzutu kośćmi na 7 (np. 3 i 4)
         mockDice.setRolls(3, 4);
 
+        // NAPRAWA: Tworzymy nowy kontekst tury DOPIERO TERAZ, po wymuszeniu rzutu!
+        // Dzięki temu TurnContext poprawnie "złapie" wynik 7, a nie początkowe 0.
+        context = new TurnContext(mockDice);
+
         // Act & Assert 1: Gracz ma tylko 1 użyteczność. Mnożnik x4. Czynsz: 7 * 4 = 28$
         u1.setOwner(owner);
         owner.addProperty(u1);

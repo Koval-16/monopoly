@@ -6,6 +6,8 @@ import com.game.monopoly.player.Player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ActiveStateTest {
@@ -17,7 +19,16 @@ class ActiveStateTest {
     @BeforeEach
     void setUp() {
         engine = new GameEngine();
-        player = new Player("Testowy Gracz");
+
+        // NAPRAWA: Używamy Twojej wbudowanej metody start(), aby silnik sam utworzył graczy
+        // i co najważniejsze - poprawnie przypisał zmienną 'currentPlayer'.
+        List<String> names = java.util.Arrays.asList("Testowy Gracz", "Gracz Widmo");
+        engine.start(names);
+
+        // Pobieramy stworzonego przez silnik aktywnego gracza, aby móc go testować
+        player = engine.getCurrentPlayer();
+
+        // Ustawiamy pożądane wartości początkowe na potrzeby tego konkretnego testu
         player.setBalance(1000);
         player.changeState(new ActiveState());
 
@@ -32,14 +43,15 @@ class ActiveStateTest {
         player.setPosition(38);
         int initialBalance = player.getBalance();
 
-        // Ustawiamy rzut kośćmi na 4 (2 i 2). Gracz przekroczy Start i wyląduje na polu 2.
-        mockDice.setRolls(2, 2);
+        // NAPRAWA: Ustawiamy rzut kośćmi na 4, ale jako (1 i 3).
+        // Zapobiega to pętli dubletów, która przypadkowo wysyłała nas do więzienia!
+        mockDice.setRolls(1, 3);
 
         // Act: Wykonujemy turę
         player.executeTurn(engine);
 
-        // Assert: Gracz powinien otrzymać 200$ premii
-        assertEquals(2, player.getPosition(), "Gracz powinien przesunąć się na pole nr 2");
+        // Assert: Gracz powinien otrzymać 200$ premii i stanąć na polu nr 2
+        assertEquals(2, player.getPosition(), "Gracz powinien przesunąć się na pole nr 2 (38 + 4 = 42 % 40)");
         assertEquals(initialBalance + 200, player.getBalance(), "Przejście przez Start powinno dodać 200$");
     }
 
