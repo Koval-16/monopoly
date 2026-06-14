@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane prefHeight="800.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.game.monopoly.GameController">
+
+    <right>
+        <VBox alignment="TOP_CENTER" prefWidth="250.0" spacing="15.0" style="-fx-background-color: #f0f0f0; -fx-border-color: #cccccc; -fx-border-width: 0 0 0 1;">
+            <padding>
+                <Insets bottom="20.0" left="15.0" right="15.0" top="20.0" />
+            </padding>
+            <Label fx:id="currentPlayerLabel" style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Tura: Brak" />
+            <Label fx:id="balanceLabel" style="-fx-font-size: 16px; -fx-text-fill: green;" text="Gotówka: 0$" />
+
+            <Button fx:id="rollDiceButton" mnemonicParsing="false" onAction="#onRollDiceClicked" prefHeight="50.0" prefWidth="200.0" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #e0f7fa;" text="1. RZUĆ KOŚĆMI" />
+
+            <Label style="-fx-font-weight: bold; -fx-padding: 10px 0 0 0;" text="Dostępne akcje:" />
+            <Button fx:id="buyPropertyButton" disable="true" mnemonicParsing="false" onAction="#onBuyPropertyClicked" prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #dcedc8;" text="Kup Nieruchomość" />
+            <Button fx:id="buildHouseButton" disable="true" mnemonicParsing="false" onAction="#onBuildHouseClicked" prefHeight="30.0" prefWidth="200.0" text="Zbuduj Domek" />
+
+            <Label style="-fx-padding: 20px 0 0 0;" text="" /> <Button fx:id="endTurnButton" disable="true" mnemonicParsing="false" onAction="#onEndTurnClicked" prefHeight="40.0" prefWidth="200.0" style="-fx-background-color: #ffcdd2;" text="2. ZAKOŃCZ TURĘ" />
+        </VBox>
+    </right>
+
+    <bottom>
+        <VBox prefHeight="150.0" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+            </padding>
+            <Label style="-fx-font-weight: bold;" text="Logi Gry:" />
+            <TextArea fx:id="gameLogsArea" editable="false" prefHeight="120.0" wrapText="true" />
+        </VBox>
+    </bottom>
+
+    <center>
+        <GridPane fx:id="boardGrid" alignment="CENTER" style="-fx-background-color: #cbf0df;" BorderPane.alignment="CENTER">
+        </GridPane>
+    </center>
+</BorderPane>

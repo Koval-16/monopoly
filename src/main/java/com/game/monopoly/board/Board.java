@@ -42,6 +42,10 @@ public class Board {
         return fields.get(wrappedPosition);
     }
 
+    public List<Field> getFields() {
+        return fields;
+    }
+
     /**
      * Zwraca całkowity rozmiar planszy (w standardowym Monopoly wynosi on 40).
      */

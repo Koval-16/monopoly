@@ -4,6 +4,8 @@ module com.game.monopoly {
 
 
     opens com.game.monopoly to javafx.fxml;
+
+    exports com.game.monopoly;
     exports com.game.monopoly.board;
     exports com.game.monopoly.board.action;
     exports com.game.monopoly.board.purchase;
