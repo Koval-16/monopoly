@@ -8,7 +8,7 @@ import com.game.monopoly.player.Player;
 
 public class CardField extends ActionField {
 
-    // Typ talii, z której pole ma ciągnąć karty (np. "Chance")
+    // Typ talii, z której pole ma ciągnąć karty (np. "Szansa", "Kasa Społeczna")
     private String deckType;
 
     public CardField(String name, int position, String deckType) {
@@ -16,35 +16,43 @@ public class CardField extends ActionField {
         this.deckType = deckType;
     }
 
+    // POTRZEBNE DLA GUI DO OKIENKA ALERT:
+    public String getDeckType() {
+        return deckType;
+    }
+
     @Override
     public void onLand(Player player, TurnContext ctx, GameEngine engine) {
-        Deck deck = null;
+        // 1. ZMIANA: Wejście na pole nie wywołuje już automatycznie akcji karty!
+        // Silnik jedynie informuje, że gracz stoi na polu i musi dobrać kartę, a resztą steruje GUI (przycisk "Dobierz Kartę").
+        engine.notifyMessage(player.getName() + " staje na polu " + this.deckType + " i musi dobrać kartę.");
+    }
 
-        // 1. Pobranie odpowiedniej talii z silnika na podstawie deckType
-        if ("Szansa".equals(this.deckType)) {
-            deck = engine.getChanceDeck();
-        } else if ("Kasa Społeczna".equals(this.deckType)) {
-            deck = engine.getCommunityChestDeck();
-        }
-
+    // 2. NOWA METODA: Ręczne wyciągnięcie karty, wywoływane przez GameController po kliknięciu "Dobierz Kartę"
+    public Card drawCard(GameEngine engine) {
+        Deck deck = getDeck(engine);
         if (deck != null) {
-            // 2. Wyciągnięcie karty z wierzchu talii
-            Card card = deck.drawCard();
-
-            if (card != null) {
-                // Informujemy system o wyciągniętej karcie
-                engine.notifyMessage(player.getName() + " ciągnie kartę [" + this.deckType + "]: " + card.getDescription());
-
-                // 3. Wykonanie logiki ukrytej w karcie (Wzorzec Polecenie)
-                card.executeAction(player, engine);
-
-                // 4. Odłożenie karty na spód talii
-                // UWAGA: Logika kart typu "Wyjdziesz z więzienia" może wymagać późniejszego
-                // dodania w klasie Deck metody sprawdzającej, czy karta ma zostać w ręce gracza.
-                if (card.shouldReturnToDeck()) {
-                    deck.putCardAtBottom(card);
-                }
-            }
+            return deck.drawCard();
         }
+        return null;
+    }
+
+    // 3. NOWA METODA: Odłożenie karty na spód talii po jej rozpatrzeniu i kliknięciu "OK" w GUI
+    public void returnCardToDeck(Card card, GameEngine engine) {
+        Deck deck = getDeck(engine);
+        // Sprawdzamy czy karta wraca do talii (np. karta "Wyjdziesz z więzienia" mogłaby nie wracać)
+        if (deck != null && card != null && card.shouldReturnToDeck()) {
+            deck.putCardAtBottom(card);
+        }
+    }
+
+    // Metoda pomocnicza ukrywająca logikę wyboru talii
+    private Deck getDeck(GameEngine engine) {
+        if ("Szansa".equals(this.deckType)) {
+            return engine.getChanceDeck();
+        } else if ("Kasa Społeczna".equals(this.deckType)) {
+            return engine.getCommunityChestDeck();
+        }
+        return null;
     }
 }

@@ -178,6 +178,9 @@ public class StreetField extends PurchaseField {
         return false;
     }
 
+    public int[] getRentPrices() {
+        return this.rentPrices;
+    }
     // --- GETTERY ---
 
     public int getHouseCount() {

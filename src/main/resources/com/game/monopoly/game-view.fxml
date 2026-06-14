@@ -9,6 +9,8 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.layout.HBox?>
 
 <BorderPane prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.game.monopoly.GameController">
 
@@ -39,12 +41,36 @@
             <Label fx:id="currentPlayerLabel" style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Tura: Brak" />
             <Label fx:id="balanceLabel" style="-fx-font-size: 16px; -fx-text-fill: green;" text="Gotówka: 0$" />
 
+            <Button fx:id="resolveFieldButton" disable="true" mnemonicParsing="false" onAction="#onResolveFieldClicked" prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #fff59d;" text="Rozpatrz Pole" />
+            <VBox fx:id="jailActionsBox" alignment="CENTER" managed="false" prefWidth="200.0" spacing="10.0" style="-fx-background-color: #ffebee; -fx-border-color: red; -fx-border-width: 2px; -fx-padding: 10px;" visible="false">
+                <Label style="-fx-font-weight: bold; -fx-text-fill: red;" text="JESTEŚ W WIĘZIENIU!" />
+                <Button fx:id="payBailButton" mnemonicParsing="false" onAction="#onPayBailClicked" prefWidth="180.0" style="-fx-background-color: #ffcdd2;" text="Zapłać 100$ kaucji" />
+                <Button fx:id="useJailCardButton" mnemonicParsing="false" onAction="#onUseJailCardClicked" prefWidth="180.0" style="-fx-background-color: #c8e6c9;" text="Użyj karty wyjścia" />
+                <Button fx:id="rollDoubleForJailButton" mnemonicParsing="false" onAction="#onRollDoubleForJailClicked" prefWidth="180.0" text="Próbuj wyrzucić dublet" />
+            </VBox>
             <Button fx:id="rollDiceButton" mnemonicParsing="false" onAction="#onRollDiceClicked" prefHeight="50.0" prefWidth="200.0" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #e0f7fa;" text="1. RZUĆ KOŚĆMI" />
 
             <Label style="-fx-font-weight: bold; -fx-padding: 10px 0 0 0;" text="Dostępne akcje:" />
-            <Button fx:id="buyPropertyButton" disable="true" mnemonicParsing="false" onAction="#onBuyPropertyClicked" prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #dcedc8;" text="Kup Nieruchomość" />
-            <Button fx:id="buildHouseButton" disable="true" mnemonicParsing="false" onAction="#onBuildHouseClicked" prefHeight="30.0" prefWidth="200.0" text="Zbuduj Domek" />
+            <HBox alignment="CENTER" prefWidth="200.0" spacing="10.0">
+                <Button fx:id="buyPropertyButton" disable="true" mnemonicParsing="false" onAction="#onBuyPropertyClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #dcedc8;" text="Kup" />
+                <Button fx:id="auctionPropertyButton" disable="true" mnemonicParsing="false" onAction="#onAuctionPropertyClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #ffcc80;" text="Licytuj" />
+            </HBox>
 
+            <Button fx:id="drawCardButton" disable="true" mnemonicParsing="false" onAction="#onDrawCardClicked" prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #bbdefb;" text="Dobierz Kartę" />
+            <Button fx:id="tradeButton" disable="false" mnemonicParsing="false" onAction="#onTradeClicked" prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #e1bee7;" text="Zaproponuj Handel" />
+            <Label style="-fx-font-weight: bold; -fx-padding: 10px 0 0 0;" text="Zarządzaj budynkami:" />
+            <ComboBox fx:id="buildPropertyComboBox" prefWidth="200.0" promptText="Wybierz ulicę..." />
+            <HBox alignment="CENTER" prefWidth="200.0" spacing="10.0">
+                <Button fx:id="buildHouseButton" disable="true" mnemonicParsing="false" onAction="#onBuildHouseClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #c8e6c9;" text="+ Domek" />
+                <Button fx:id="buildHotelButton" disable="true" mnemonicParsing="false" onAction="#onBuildHotelClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #ffcdd2;" text="+ Hotel" />
+                <Button fx:id="sellBuildingButton" disable="true" mnemonicParsing="false" onAction="#onSellBuildingClicked" prefHeight="30.0" prefWidth="70.0" style="-fx-background-color: #e0e0e0;" text="- Sprzedaj" />
+            </HBox>
+            <Label style="-fx-font-weight: bold; -fx-padding: 10px 0 0 0;" text="Zarządzaj własnością:" />
+            <ComboBox fx:id="managePropertyComboBox" prefWidth="200.0" promptText="Wybierz posiadłość..." />
+            <HBox alignment="CENTER" prefWidth="200.0" spacing="10.0">
+                <Button fx:id="mortgageButton" disable="true" mnemonicParsing="false" onAction="#onMortgageClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #ffcc80;" text="Zastaw" />
+                <Button fx:id="unmortgageButton" disable="true" mnemonicParsing="false" onAction="#onUnmortgageClicked" prefHeight="30.0" prefWidth="95.0" style="-fx-background-color: #c5e1a5;" text="Wykup" />
+            </HBox>
             <Label style="-fx-padding: 20px 0 0 0;" text="" />
             <Button fx:id="endTurnButton" disable="true" mnemonicParsing="false" onAction="#onEndTurnClicked" prefHeight="40.0" prefWidth="200.0" style="-fx-background-color: #ffcdd2;" text="2. ZAKOŃCZ TURĘ" />
         </VBox>

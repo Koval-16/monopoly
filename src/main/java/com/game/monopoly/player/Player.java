@@ -136,4 +136,5 @@ public class Player {
     public PlayerState getCurrentState() {
         return this.currentState;
     }
+
 }

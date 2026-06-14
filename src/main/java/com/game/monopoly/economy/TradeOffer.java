@@ -132,6 +132,22 @@ public class TradeOffer {
     public void setOfferedMoney(int amount) { this.offeredMoney = amount; }
     public void setRequestedMoney(int amount) { this.requestedMoney = amount; }
 
+    public int getOfferedJailCards() {
+        return offeredJailCards;
+    }
+
+    public int getOfferedMoney() {
+        return offeredMoney;
+    }
+
+    public int getRequestedMoney() {
+        return requestedMoney;
+    }
+
+    public int getRequestedJailCards() {
+        return requestedJailCards;
+    }
+
     public void setOfferedJailCards(int count) { this.offeredJailCards = count; }
     public void setRequestedJailCards(int count) { this.requestedJailCards = count; }
 

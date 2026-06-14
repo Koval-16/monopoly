@@ -60,7 +60,7 @@ public class ActiveState implements PlayerState {
         Field currentField = engine.getBoard().getField(newPosition);
         engine.notifyMessage(player.getName() + " zatrzymuje się na polu: " + currentField.getName());
 
-        currentField.onLand(player, ctx, engine);
+        // currentField.onLand(player, ctx, engine);
 
         // 6. GUI TERAZ PRZEJMUJE KONTROLĘ
         // Zamiast wywoływać playTurn() lub endTurn(), po prostu informujemy GUI o dublecie
