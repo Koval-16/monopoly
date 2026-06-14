@@ -32,4 +32,6 @@ public interface GameObserver {
      * GUI powinno wtedy wyświetlić okienko decyzyjne dla gracza docelowego.
      */
     void onTradeRequested(TradeOffer offer);
+
+    void onCardDrawn(Player player, String deckType, String cardDescription);
 }

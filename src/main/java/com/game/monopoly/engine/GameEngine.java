@@ -39,11 +39,13 @@ public class GameEngine {
         this.currentPlayer = null;
 
         // Inicjalizacja głównych komponentów gry
-        this.board = new Board(); // To wywoła BoardFactory pod spodem
+        this.board = new Board();
         this.bank = new Bank();
         this.dice = new Dice();
-        this.chanceDeck = new Deck("Szansa");
-        this.communityChestDeck = new Deck("Kasa Społeczna");
+
+        // POPRAWA: Używamy DeckFactory, żeby talie były pełne kart!
+        this.chanceDeck = com.game.monopoly.card.DeckFactory.createChanceDeck();
+        this.communityChestDeck = com.game.monopoly.card.DeckFactory.createCommunityChestDeck();
     }
 
     // --- FUNKCJE (Metody) ---
@@ -182,6 +184,12 @@ public class GameEngine {
     public void notifyPlayerStateChanged(Player player) {
         for (GameObserver obs : observers) {
             obs.onPlayerStateChanged(player);
+        }
+    }
+
+    public void notifyCardDrawn(Player player, String deckType, String cardDescription) {
+        for (GameObserver obs : observers) {
+            obs.onCardDrawn(player, deckType, cardDescription);
         }
     }
 

@@ -30,6 +30,8 @@ public class ActiveState implements PlayerState {
                 player.changeState(new InJailState());
                 engine.notifyPlayerStateChanged(player);
                 engine.notifyPlayerMoved(player, 10);
+
+                // Tutaj zostawiamy endTurn(), bo gracz w więzieniu i tak nie może nic więcej zrobić
                 engine.endTurn();
                 return; // Natychmiastowe przerwanie tury
             }
@@ -60,13 +62,12 @@ public class ActiveState implements PlayerState {
 
         currentField.onLand(player, ctx, engine);
 
-        // 6. Ewentualne ponowienie rzutu lub koniec tury
+        // 6. GUI TERAZ PRZEJMUJE KONTROLĘ
+        // Zamiast wywoływać playTurn() lub endTurn(), po prostu informujemy GUI o dublecie
         if (dice.isDouble()) {
-            engine.notifyMessage(player.getName() + " wyrzucił dublet, zyskuje dodatkowy rzut!");
-            // Rekurencyjne wywołanie tury dla tego samego stanu
-            playTurn(player, engine);
+            engine.notifyMessage(player.getName() + " wyrzucił dublet! Przysługuje mu dodatkowy rzut.");
         } else {
-            engine.endTurn();
+            engine.notifyMessage("Oczekiwanie na decyzję gracza...");
         }
     }
 }

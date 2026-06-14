@@ -6,6 +6,7 @@ import com.game.monopoly.engine.GameObserver;
 import com.game.monopoly.player.Player;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -21,6 +22,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.layout.HBox;
 import com.game.monopoly.board.Field;
 import com.game.monopoly.board.purchase.PurchaseField;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
+import com.game.monopoly.board.purchase.RailroadField;
+import com.game.monopoly.player.state.InJailState;
 
 import java.util.Arrays;
 
@@ -35,6 +40,10 @@ public class GameController implements GameObserver {
     @FXML private GridPane boardGrid;
     @FXML private Button buyPropertyButton;
     @FXML private Button buildHouseButton;
+    @FXML private VBox playersSummaryBox;
+    @FXML private VBox playerCardsBox;
+
+    private HBox diceContainer; // Pudełko na kości na środku planszy
 
     // --- Silnik Gry ---
     private GameEngine engine;
@@ -42,6 +51,9 @@ public class GameController implements GameObserver {
     // TABLICE POMOCNICZE DO PIONKÓW:
     private VBox[] boardCells = new VBox[40];
     private HBox[] pawnContainers = new HBox[40]; // Pudełeczka na pionki wewnątrz każdego pola
+    // PALETA KOLORÓW GRACZY (Odpowiednio: Gracz 1, 2, 3, 4)
+    private final Color[] PLAYER_COLORS = {Color.RED, Color.DODGERBLUE, Color.LIMEGREEN, Color.GOLD};
+    private final String[] PLAYER_HEX_COLORS = {"#FF0000", "#1E90FF", "#32CD32", "#FFD700"};
 
     @FXML
     public void initialize() {
@@ -54,17 +66,24 @@ public class GameController implements GameObserver {
         // WYWOŁANIE NASZEGO NOWEGO KODU:
         drawBoard();
         updatePawns();
+        drawDice(0, 0);
     }
 
     @FXML
     public void onRollDiceClicked() {
-        rollDiceButton.setDisable(true); // Gracz nie może rzucić drugi raz (chyba że dublet, to naprawimy później)
-        endTurnButton.setDisable(false); // Może za to zakończyć turę
-
-        // Odpalamy turę gracza w silniku
         engine.playTurn();
+        drawDice(engine.getDice().getRoll1(), engine.getDice().getRoll2());
 
-        // Zależnie od tego, co się stało (np. dublet), włączamy odpowiednie przyciski
+        // Jeśli gracz wyrzucił dublet, NIE wyłączamy mu przycisku rzutu!
+        if (engine.getDice().isDouble()) {
+            rollDiceButton.setDisable(false);
+            endTurnButton.setDisable(true); // Wymuszamy kolejny rzut
+            engine.notifyMessage("DUBLET! Rzucasz jeszcze raz.");
+        } else {
+            rollDiceButton.setDisable(true);
+            endTurnButton.setDisable(false);
+        }
+
         updatePlayerUI();
     }
 
@@ -86,9 +105,10 @@ public class GameController implements GameObserver {
             // Wyłączamy przycisk, bo pole jest już kupione
             buyPropertyButton.setDisable(true);
 
-            // Odświeżamy GUI (żeby pokazać nowy stan konta)
+            // Odświeżamy GUI (pokaże nowy stan konta oraz nową kartę własności!)
             updatePlayerUI();
-            drawBoard(); // Przerysuje planszę, żeby pokazać kolorowy pasek, jeśli to zaimplementowaliśmy
+
+            // UWAGA: Usunięto drawBoard(), aby plansza i kości nie znikały!
         }
     }
 
@@ -130,6 +150,9 @@ public class GameController implements GameObserver {
                 }
             }
 
+            updatePlayersSummary();
+            updatePlayerCards(current);
+            updateBoardOwnership();
             // (W przyszłości dodamy tu sprawdzanie, czy gracz ma pełne dzielnice, żeby włączyć buildHouseButton)
         }
     }
@@ -281,7 +304,7 @@ public class GameController implements GameObserver {
 
             // Tworzymy kółko (pionek) o promieniu 6 pikseli
             Circle pawn = new Circle(6);
-            pawn.setFill(playerColors[i % playerColors.length]); // Każdy gracz ma inny kolor
+            pawn.setFill(PLAYER_COLORS[i % PLAYER_COLORS.length]); // ZMIANA NA GLOBALNĄ PALETĘ
             pawn.setStroke(Color.BLACK); // Czarna obwódka
 
             // Wrzucamy pionek do odpowiedniego pojemnika na planszy
@@ -290,5 +313,148 @@ public class GameController implements GameObserver {
             }
         }
     }
+
+    // ==========================================
+    // NOWE METODY RYSOWANIA (KOŚCI, KARTY, GRACZE)
+    // ==========================================
+
+    private void drawDice(int r1, int r2) {
+        if (diceContainer == null) {
+            diceContainer = new HBox(15);
+            diceContainer.setAlignment(Pos.CENTER);
+        }
+
+        // ZABEZPIECZENIE: Jeśli plansza nie zawiera naszych kości, wrzucamy je tam na nowo!
+        // (W siatce 11x11 środek planszy to kolumna 4, rząd 5)
+        if (!boardGrid.getChildren().contains(diceContainer)) {
+            boardGrid.add(diceContainer, 4, 5, 3, 1);
+        }
+
+        diceContainer.getChildren().clear();
+        diceContainer.getChildren().addAll(createSingleDie(r1), createSingleDie(r2));
+    }
+
+    private StackPane createSingleDie(int value) {
+        StackPane die = new StackPane();
+        die.setPrefSize(60, 60);
+        die.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-border-width: 2px; -fx-border-radius: 10px; -fx-background-radius: 10px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 0);");
+
+        Label num = new Label(value == 0 ? "?" : String.valueOf(value));
+        num.setStyle("-fx-font-size: 28px; -fx-font-weight: bold;");
+        die.getChildren().add(num);
+        return die;
+    }
+
+    private void updatePlayersSummary() {
+        playersSummaryBox.getChildren().clear();
+        List<Player> players = engine.getPlayers();
+
+        for (int i = 0; i < players.size(); i++) {
+            Player p = players.get(i);
+            String status = (p.getCurrentState() instanceof InJailState) ? " (Więzienie)" : "";
+
+            // Pojemnik w rzędzie na kółko + tekst
+            HBox row = new HBox(8);
+            row.setAlignment(Pos.CENTER_LEFT);
+
+            // Kolorowe kółeczko reprezentujące pionek
+            Circle pawnColor = new Circle(6, PLAYER_COLORS[i % PLAYER_COLORS.length]);
+            pawnColor.setStroke(Color.BLACK);
+
+            // Tekst gracza
+            Label pLabel = new Label(p.getName() + " - " + p.getBalance() + "$" + status);
+            pLabel.setStyle("-fx-font-size: 13px;");
+
+            // Pogrubiamy gracza, którego jest teraz tura
+            if (p == engine.getCurrentPlayer()) {
+                pLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: blue;");
+            }
+
+            row.getChildren().addAll(pawnColor, pLabel);
+            playersSummaryBox.getChildren().add(row);
+        }
+    }
+
+    private void updatePlayerCards(Player current) {
+        playerCardsBox.getChildren().clear();
+
+        if (current.getProperties().isEmpty()) {
+            playerCardsBox.getChildren().add(new Label("Brak nieruchomości."));
+            return;
+        }
+
+        for (PurchaseField property : current.getProperties()) {
+            VBox card = new VBox();
+            card.setPrefSize(180, 100);
+            card.setStyle("-fx-border-color: black; -fx-border-width: 2px; -fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 3, 0, 0, 0);");
+            card.setAlignment(Pos.TOP_CENTER);
+
+            // Górny pasek z kolorem lub typem (Dworzec/Użyteczność)
+            Label header = new Label();
+            header.setPrefWidth(Double.MAX_VALUE);
+            header.setPrefHeight(25);
+            header.setAlignment(Pos.CENTER);
+
+            if (property instanceof StreetField) {
+                StreetField street = (StreetField) property;
+                header.setStyle("-fx-background-color: " + getColorHex(street.getColorGroup()) + "; -fx-border-color: black; -fx-border-width: 0 0 2px 0;");
+            } else {
+                header.setText(property instanceof RailroadField ? "🚂 DWORZEC" : "💡 UŻYTECZNOŚĆ");
+                header.setStyle("-fx-background-color: #dddddd; -fx-border-color: black; -fx-border-width: 0 0 2px 0; -fx-font-weight: bold;");
+            }
+
+            Label name = new Label(property.getName());
+            name.setStyle("-fx-font-weight: bold; -fx-padding: 5px;");
+            name.setWrapText(true);
+            name.setTextAlignment(TextAlignment.CENTER);
+
+            Label value = new Label("Wartość: " + property.getPrice() + "$");
+
+            card.getChildren().addAll(header, name, value);
+            playerCardsBox.getChildren().add(card);
+        }
+    }
+
+    private void updateBoardOwnership() {
+        List<Field> fields = engine.getBoard().getFields();
+        List<Player> players = engine.getPlayers();
+
+        for (int i = 0; i < fields.size(); i++) {
+            Field field = fields.get(i);
+
+            // Sprawdzamy czy to pole można kupić i czy ma już właściciela
+            if (field instanceof PurchaseField) {
+                Player owner = ((PurchaseField) field).getOwner();
+                if (owner != null) {
+                    // Szukamy indeksu gracza, żeby dobrać odpowiedni kolor HEX
+                    int ownerIndex = players.indexOf(owner);
+                    String colorHex = PLAYER_HEX_COLORS[ownerIndex % PLAYER_HEX_COLORS.length];
+
+                    // Zmieniamy ramkę kafelka na grubą (3px) w kolorze gracza
+                    boardCells[i].setStyle("-fx-border-color: " + colorHex + "; -fx-background-color: #fdfdfd; -fx-border-width: 3px;");
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onCardDrawn(Player player, String deckType, String cardDescription) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Karta - " + deckType);
+            alert.setHeaderText(player.getName() + " wyciąga kartę!");
+            alert.setContentText(cardDescription);
+
+            // showAndWait() to magia! Blokuje całe główne okno gry (nie da się kliknąć
+            // 'Zakończ Turę'), dopóki gracz nie przeczyta karty i nie kliknie OK.
+            alert.showAndWait();
+
+            // Dopiero po kliknięciu OK, odświeżamy interfejs (bo backend już
+            // pobrał graczowi pieniądze albo przesunął jego pionek)
+            updatePlayerUI();
+            updatePawns();
+        });
+    }
+
 
 }
