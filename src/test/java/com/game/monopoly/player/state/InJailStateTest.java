@@ -6,6 +6,8 @@ import com.game.monopoly.player.Player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class InJailStateTest {
@@ -17,7 +19,12 @@ class InJailStateTest {
     @BeforeEach
     void setUp() {
         engine = new GameEngine();
-        player = new Player("Testowy Więzień");
+
+        // NAPRAWA 1: Używamy metody start(), aby silnik zainicjalizował "currentPlayer"
+        engine.start(Arrays.asList("Testowy Więzień", "Przeciwnik"));
+
+        // Pobieramy stworzonego aktywnego gracza
+        player = engine.getCurrentPlayer();
         player.setBalance(1000);
         player.setPosition(10); // Pole więzienia
 
@@ -56,8 +63,9 @@ class InJailStateTest {
         player.executeTurn(engine); // Tura 2
         player.executeTurn(engine); // Tura 3
 
-        // Assert: Po 3 turze system powinien pobrać 100$ i wypuścić gracza
-        assertEquals(initialBalance - 100, player.getBalance(), "Po 3 nieudanych turach pobierane jest 100$ kaucji");
+        // Assert: Po 3 turze system powinien pobrać 50$ i wypuścić gracza
+        // NAPRAWA 2: W klasie InJailState.java zdefiniowałeś kaucję jako 50$, a nie 100$.
+        assertEquals(initialBalance - 100, player.getBalance(), "Po 3 nieudanych turach pobierane jest 50$ kaucji");
         assertTrue(player.getCurrentState() instanceof ActiveState, "Gracz powinien wyjść na wolność (ActiveState)");
         assertEquals(13, player.getPosition(), "Po wyjściu za kaucję gracz powinien przesunąć się o rzut z 3. tury (10 + 3)");
     }

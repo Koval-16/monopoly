@@ -22,9 +22,5 @@ public class GoToJailField extends ActionField {
         // 2. Zmiana stanu gracza na uwięzionego
         player.changeState(new InJailState());
         engine.notifyPlayerStateChanged(player);
-
-        // Zgodnie z zasadami Monopoly, wejście na to pole bezwzględnie kończy turę,
-        // nawet jeśli gracz wszedł na nie, wyrzucając dublet.
-        // Logika w ActiveState lub GameEngine obsłuży fakt, że stan się zmienił.
     }
 }

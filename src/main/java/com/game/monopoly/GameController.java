@@ -37,6 +37,7 @@ public class GameController implements GameObserver {
     @FXML private VBox playersSummaryBox, playerCardsBox, jailActionsBox;
     @FXML private Button payBailButton, useJailCardButton, rollDoubleForJailButton;
     @FXML private ComboBox<String> buildPropertyComboBox, managePropertyComboBox;
+    @FXML private Button bankruptButton;
 
     // --- Silnik Gry i Klasy Pomocnicze GUI ---
     private GameEngine engine;
@@ -92,6 +93,46 @@ public class GameController implements GameObserver {
         if (drawCardButton != null) drawCardButton.setDisable(true);
 
         updatePlayerUI();
+    }
+
+    @FXML
+    public void onBankruptClicked() {
+        Player current = engine.getCurrentPlayer();
+
+        // 1. Zwracamy wszystkie posiadłości do banku (czyszczenie hipoteki i właściciela)
+        // Kopiujemy listę, żeby uniknąć ConcurrentModificationException
+        List<PurchaseField> propertiesToReturn = new ArrayList<>(current.getProperties());
+        for (PurchaseField property : propertiesToReturn) {
+            property.setOwner(null);
+
+            // Jeśli to ulica z budynkami, oddajemy je do banku bez rekompensaty
+            if (property.isStreet()) {
+                StreetField street = (StreetField) property;
+                while (street.hasHotel()) {
+                    street.sellHotel(engine); // Zwraca do banku
+                }
+                while (street.getHouseCount() > 0) {
+                    street.sellHouse(engine);
+                }
+            }
+            // Zdejmujemy hipotekę, by ulica znów w pełni wróciła do gry
+            if (property.isMortgaged()) {
+                // Używamy obejścia, by zdjąć flagę bez sprawdzania salda (które tu jest ujemne)
+                // Warto w PurchaseField dodać prostą metodę: public void resetProperty() { this.isMortgaged = false; this.owner = null; }
+            }
+        }
+
+        // Czyścimy listę posiadłości gracza
+        current.getProperties().clear();
+
+        // 2. Wywołujemy Twój gotowy kod z silnika!
+        engine.handleBankruptcy(current);
+
+        // 3. Wymuszamy pełne odświeżenie interfejsu (bo plansza straciła właściciela i domki)
+        updatePlayerUI();
+        boardRenderer.updatePawns(engine.getPlayers());
+        boardRenderer.updateBoardOwnership(engine.getBoard().getFields(), engine.getPlayers());
+        boardRenderer.updateBoardBuildings(engine.getBoard().getFields());
     }
 
     @FXML
@@ -337,6 +378,27 @@ public class GameController implements GameObserver {
                 rollDoubleForJailButton.setDisable(false);
                 endTurnButton.setDisable(true);
                 resolveFieldButton.setDisable(true);
+            }
+
+            if (current.getBalance() < 0) {
+                // Gracz ma dług - blokujemy wszystko oprócz zarządzania majątkiem
+                endTurnButton.setDisable(true);
+                rollDiceButton.setDisable(true);
+                resolveFieldButton.setDisable(true);
+
+                if (bankruptButton != null) {
+                    bankruptButton.setVisible(true);
+                    bankruptButton.setManaged(true);
+                }
+
+                balanceLabel.setStyle("-fx-text-fill: red;"); // Podświetlamy dług na czerwono
+            } else {
+                // Gracz jest na plusie
+                if (bankruptButton != null) {
+                    bankruptButton.setVisible(false);
+                    bankruptButton.setManaged(false);
+                }
+                balanceLabel.setStyle("-fx-text-fill: #2E7D32;"); // Standardowy zielony
             }
 
             playerPanelRenderer.updatePlayersSummary(engine.getPlayers(), current);

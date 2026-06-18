@@ -105,6 +105,8 @@ public abstract class PurchaseField extends Field {
         return !this.isOwned() && player.getBalance() >= this.price;
     }
 
+    public boolean isStreet(){return false;}
+
     @Override
     public boolean isPurchasable() { return true; }
 

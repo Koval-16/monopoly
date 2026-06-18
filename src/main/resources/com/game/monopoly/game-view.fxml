@@ -78,6 +78,7 @@
             <VBox VBox.vgrow="ALWAYS" />
 
             <Button fx:id="endTurnButton" disable="true" mnemonicParsing="false" onAction="#onEndTurnClicked" prefHeight="55.0" prefWidth="240.0" styleClass="btn, btn-danger, btn-large" text="2. ZAKOŃCZ TURĘ" />
+            <Button fx:id="bankruptButton" mnemonicParsing="false" onAction="#onBankruptClicked" prefHeight="35.0" prefWidth="240.0" styleClass="btn, btn-danger" text="OGŁOŚ BANKRUCTWO" visible="false" managed="false" />
         </VBox>
     </right>
 

@@ -8,7 +8,6 @@ import com.game.monopoly.player.Player;
 
 public class CardField extends ActionField {
 
-    // Typ talii, z której pole ma ciągnąć karty (np. "Szansa", "Kasa Społeczna")
     private String deckType;
 
     public CardField(String name, int position, String deckType) {
@@ -23,12 +22,9 @@ public class CardField extends ActionField {
 
     @Override
     public void onLand(Player player, TurnContext ctx, GameEngine engine) {
-        // 1. ZMIANA: Wejście na pole nie wywołuje już automatycznie akcji karty!
-        // Silnik jedynie informuje, że gracz stoi na polu i musi dobrać kartę, a resztą steruje GUI (przycisk "Dobierz Kartę").
         engine.notifyMessage(player.getName() + " staje na polu " + this.deckType + " i musi dobrać kartę.");
     }
 
-    // 2. NOWA METODA: Ręczne wyciągnięcie karty, wywoływane przez GameController po kliknięciu "Dobierz Kartę"
     public Card drawCard(GameEngine engine) {
         Deck deck = getDeck(engine);
         if (deck != null) {

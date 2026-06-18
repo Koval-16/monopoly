@@ -212,6 +212,9 @@ public class StreetField extends PurchaseField {
         return false;
     }
 
+    @Override
+    public boolean isStreet(){return true;}
+
     public int[] getRentPrices() {
         return this.rentPrices;
     }
