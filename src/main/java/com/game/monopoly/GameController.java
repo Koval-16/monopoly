@@ -1,6 +1,7 @@
 package com.game.monopoly;
 
 import com.game.monopoly.board.action.CardField;
+import com.game.monopoly.card.Card;
 import com.game.monopoly.economy.TradeOffer;
 import com.game.monopoly.engine.GameEngine;
 import com.game.monopoly.engine.GameObserver;
@@ -98,22 +99,23 @@ public class GameController implements GameObserver {
         Player currentPlayer = engine.getCurrentPlayer();
         Field currentField = engine.getBoard().getFields().get(currentPlayer.getPosition());
 
-        com.game.monopoly.engine.TurnContext ctx = new com.game.monopoly.engine.TurnContext(engine.getDice());
-        currentField.onLand(currentPlayer, ctx, engine);
+        engine.resolveCurrentField();
 
         resolveFieldButton.setDisable(true);
 
-        if (currentField instanceof PurchaseField) {
+        // Zamiast: if (currentField instanceof PurchaseField)
+        if (currentField.isPurchasable()) {
             PurchaseField property = (PurchaseField) currentField;
-            if (property.getOwner() == null) {
-                buyPropertyButton.setDisable(currentPlayer.getBalance() < property.getPrice());
+            if (!property.isOwned()) {
+                buyPropertyButton.setDisable(!property.canBeBoughtBy(currentPlayer));
                 auctionPropertyButton.setDisable(false);
                 endTurnButton.setDisable(true);
                 rollDiceButton.setDisable(true);
             } else {
                 enableEndTurnOrDouble();
             }
-        } else if (currentField instanceof CardField) {
+        }
+        else if (currentField.isCardField()) {
             drawCardButton.setDisable(false);
             endTurnButton.setDisable(true);
             rollDiceButton.setDisable(true);
@@ -129,11 +131,9 @@ public class GameController implements GameObserver {
         Player current = engine.getCurrentPlayer();
         Field currentField = engine.getBoard().getFields().get(current.getPosition());
 
-        if (currentField instanceof PurchaseField) {
+        if (currentField.isPurchasable()) {
             PurchaseField property = (PurchaseField) currentField;
-            current.payMoney(property.getPrice());
-            property.setOwner(current);
-            current.addProperty(property);
+            property.buy(current);
 
             engine.notifyMessage(current.getName() + " kupuje " + property.getName() + "!");
             buyPropertyButton.setDisable(true);
@@ -148,10 +148,9 @@ public class GameController implements GameObserver {
     public void onAuctionPropertyClicked() {
         Player activePlayer = engine.getCurrentPlayer();
         List<Player> allPlayers = new ArrayList<>(engine.getPlayers());
-        allPlayers.remove(activePlayer);
 
         Field currentField = engine.getBoard().getFields().get(activePlayer.getPosition());
-        if (currentField instanceof PurchaseField) {
+        if (currentField.isPurchasable()) {
             dialogManager.startAuctionUI((PurchaseField) currentField, allPlayers, () -> {
                 buyPropertyButton.setDisable(true);
                 auctionPropertyButton.setDisable(true);
@@ -167,15 +166,12 @@ public class GameController implements GameObserver {
         Player currentPlayer = engine.getCurrentPlayer();
         Field currentField = engine.getBoard().getFields().get(currentPlayer.getPosition());
 
-        if (currentField instanceof CardField) {
+        if (currentField.isCardField()) {
             CardField cardField = (CardField) currentField;
-            com.game.monopoly.card.Card drawnCard = cardField.drawCard(engine);
+            Card drawnCard = cardField.drawAndExecute(currentPlayer, engine);
 
             if(drawnCard != null) {
                 dialogManager.showAlert("Karta - " + cardField.getDeckType(), drawnCard.getDescription());
-                drawnCard.executeAction(currentPlayer, engine);
-                cardField.returnCardToDeck(drawnCard, engine);
-
                 engine.notifyMessage(currentPlayer.getName() + " rozpatrzył kartę.");
                 drawCardButton.setDisable(true);
 
@@ -201,7 +197,7 @@ public class GameController implements GameObserver {
     }
 
     private void enableEndTurnOrDouble() {
-        if (engine.getDice().isDouble()) {
+        if (engine.canRollAgain()) {
             rollDiceButton.setDisable(false);
             endTurnButton.setDisable(true);
             engine.notifyMessage("DUBLET! Rozpatrzyłeś pole, rzucasz jeszcze raz.");
@@ -241,8 +237,7 @@ public class GameController implements GameObserver {
         String selected = buildPropertyComboBox.getValue();
         if (selected != null && buildablePropertiesMap.containsKey(selected)) {
             StreetField sf = buildablePropertiesMap.get(selected);
-            if (sf.hasHotel()) sf.sellHotel(engine);
-            else if (sf.getHouseCount() > 0) sf.sellHouse(engine);
+            sf.sellTopBuilding(engine);
 
             updatePlayerUI();
             boardRenderer.updateBoardBuildings(engine.getBoard().getFields());
@@ -255,7 +250,7 @@ public class GameController implements GameObserver {
         if (selected != null && ownedPropertiesMap.containsKey(selected)) {
             PurchaseField pf = ownedPropertiesMap.get(selected);
             pf.mortgage();
-            engine.notifyMessage(engine.getCurrentPlayer().getName() + " zastawia " + pf.getName() + " za " + (pf.getPrice()/2) + "$.");
+            engine.notifyMessage(engine.getCurrentPlayer().getName() + " zastawia " + pf.getName() + " za " + (pf.getMortgageValue()) + "$.");
             updatePlayerUI();
         }
     }
@@ -278,8 +273,7 @@ public class GameController implements GameObserver {
     @FXML
     public void onPayBailClicked() {
         Player current = engine.getCurrentPlayer();
-        current.payMoney(100);
-        current.changeState(new com.game.monopoly.player.state.ActiveState());
+        current.payBail();
         engine.notifyMessage(current.getName() + " wpłaca 100$ kaucji. Jest wolny i w następnej turze będzie mógł grać.");
         endJailTurn();
     }
@@ -287,8 +281,7 @@ public class GameController implements GameObserver {
     @FXML
     public void onUseJailCardClicked() {
         Player current = engine.getCurrentPlayer();
-        current.removeOutOfJailCards(1);
-        current.changeState(new com.game.monopoly.player.state.ActiveState());
+        current.useJailCard();
         engine.notifyMessage(current.getName() + " używa karty wyjścia z więzienia! Jest wolny.");
         endJailTurn();
     }
@@ -296,16 +289,15 @@ public class GameController implements GameObserver {
     @FXML
     public void onRollDoubleForJailClicked() {
         Player current = engine.getCurrentPlayer();
-        engine.getDice().roll();
+        boolean success = engine.tryRollForJail();
         int r1 = engine.getDice().getRoll1();
         int r2 = engine.getDice().getRoll2();
         boardRenderer.drawDice(r1, r2);
 
-        if (engine.getDice().isDouble()) {
-            current.changeState(new com.game.monopoly.player.state.ActiveState());
-            engine.notifyMessage(current.getName() + " wyrzuca dublet (" + r1 + ", " + r2 + ")! Wychodzi z więzienia.");
+        if (success) {
+            engine.notifyMessage(current.getName() + " wyrzuca dublet! Wychodzi.");
         } else {
-            engine.notifyMessage(current.getName() + " wyrzuca (" + r1 + ", " + r2 + "). Brak dubletu, pozostaje w więzieniu.");
+            engine.notifyMessage(current.getName() + " nie wyrzuca dubletu.");
         }
         endJailTurn();
     }
@@ -326,7 +318,8 @@ public class GameController implements GameObserver {
             currentPlayerLabel.setText("Tura: " + current.getName());
             balanceLabel.setText("Gotówka: " + current.getBalance() + "$\nKarty z więzienia: " + current.getOutOfJailCards());
 
-            boolean inJail = current.getCurrentState() instanceof InJailState;
+            // W GameController:
+            boolean inJail = current.isInJail();
 
             if (jailActionsBox != null) {
                 jailActionsBox.setVisible(inJail);
@@ -339,8 +332,8 @@ public class GameController implements GameObserver {
             }
 
             if (inJail) {
-                payBailButton.setDisable(current.getBalance() < 100);
-                useJailCardButton.setDisable(current.getOutOfJailCards() <= 0);
+                payBailButton.setDisable(!current.canPayBail());
+                useJailCardButton.setDisable(!current.hasOutOfJailCard());
                 rollDoubleForJailButton.setDisable(false);
                 endTurnButton.setDisable(true);
                 resolveFieldButton.setDisable(true);
@@ -360,23 +353,12 @@ public class GameController implements GameObserver {
         String currentlySelected = buildPropertyComboBox.getValue();
         buildPropertyComboBox.getItems().clear();
 
-        Map<String, List<StreetField>> colorMap = new HashMap<>();
+        // Wystarczy zapytać sam model, czy dany gracz ma monopol na konkretną ulicę!
         for (PurchaseField pf : current.getProperties()) {
-            if (pf instanceof StreetField) {
-                StreetField sf = (StreetField) pf;
-                colorMap.computeIfAbsent(sf.getColorGroup(), k -> new ArrayList<>()).add(sf);
-            }
-        }
-
-        for (Map.Entry<String, List<StreetField>> entry : colorMap.entrySet()) {
-            String color = entry.getKey();
-            int required = (color.equals("Brązowa") || color.equals("Ciemnoniebieska")) ? 2 : 3;
-
-            if (entry.getValue().size() == required) {
-                for (StreetField sf : entry.getValue()) {
-                    buildablePropertiesMap.put(sf.getName(), sf);
-                    buildPropertyComboBox.getItems().add(sf.getName());
-                }
+            if (pf.isBuildableMonopoly()) {
+                buildablePropertiesMap.put(pf.getName(), (StreetField) pf);
+                // (Rzutowanie w mapie możesz zostawić, chyba że zmienisz typ mapy na PurchaseField)
+                buildPropertyComboBox.getItems().add(pf.getName());
             }
         }
 
@@ -408,15 +390,15 @@ public class GameController implements GameObserver {
         StreetField sf = buildablePropertiesMap.get(selectedStreetName);
         Player current = engine.getCurrentPlayer();
 
-        boolean canBuildHouse = !sf.hasHotel() && sf.getHouseCount() < 4 && current.getBalance() >= sf.getHousePrice();
+        boolean canBuildHouse = sf.canBuildHouse(current);
         buildHouseButton.setDisable(!canBuildHouse);
         buildHouseButton.setText("+ Domek (" + sf.getHousePrice() + "$)");
 
-        boolean canBuildHotel = !sf.hasHotel() && sf.getHouseCount() == 4 && current.getBalance() >= sf.getHousePrice();
+        boolean canBuildHotel = sf.canBuildHotel(current);
         buildHotelButton.setDisable(!canBuildHotel);
         buildHotelButton.setText("+ Hotel (" + sf.getHousePrice() + "$)");
 
-        boolean canSellBuilding = sf.getHouseCount() > 0 || sf.hasHotel();
+        boolean canSellBuilding = sf.canSellBuilding();
         sellBuildingButton.setDisable(!canSellBuilding);
     }
 
@@ -456,20 +438,14 @@ public class GameController implements GameObserver {
         PurchaseField pf = ownedPropertiesMap.get(selectedProperty);
         Player current = engine.getCurrentPlayer();
 
-        boolean hasBuildings = false;
-        if (pf instanceof StreetField) {
-            StreetField sf = (StreetField) pf;
-            hasBuildings = sf.getHouseCount() > 0 || sf.hasHotel();
-        }
-
-        boolean canMortgage = !pf.isMortgaged() && !hasBuildings;
+        // W GameController:
+        boolean canMortgage = pf.canBeMortgaged();
         mortgageButton.setDisable(!canMortgage);
-        mortgageButton.setText("Zastaw (+" + (pf.getPrice()/2) + "$)");
+        mortgageButton.setText("Zastaw (+" + pf.getMortgageValue() + "$)");
 
-        int unmortgageCost = (pf.getPrice() / 2) + (int)((pf.getPrice() / 2) * 0.1);
-        boolean canUnmortgage = pf.isMortgaged() && current.getBalance() >= unmortgageCost;
+        boolean canUnmortgage = pf.canBeUnmortgagedBy(current);
         unmortgageButton.setDisable(!canUnmortgage);
-        unmortgageButton.setText("Wykup (-" + unmortgageCost + "$)");
+        unmortgageButton.setText("Wykup (-" + pf.getUnmortgageCost() + "$)");
     }
 
     // ==========================================

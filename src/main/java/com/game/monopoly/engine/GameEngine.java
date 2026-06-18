@@ -2,6 +2,7 @@ package com.game.monopoly.engine;
 
 // Importy klas z innych pakietów, którymi zarządza Silnik
 import com.game.monopoly.board.Board;
+import com.game.monopoly.board.Field;
 import com.game.monopoly.board.purchase.PurchaseField;
 import com.game.monopoly.card.Deck;
 import com.game.monopoly.economy.Bank;
@@ -113,6 +114,28 @@ public class GameEngine {
             // Jeśli zbankrutował w swojej własnej turze, od razu przekaż kolejkę
             nextPlayer();
         }
+    }
+
+    public void resolveCurrentField() {
+        Player currentPlayer = this.getCurrentPlayer();
+        Field currentField = this.board.getFields().get(currentPlayer.getPosition());
+        TurnContext ctx = new TurnContext(this.dice);
+        currentField.onLand(currentPlayer, ctx, this);
+    }
+
+    // W GameEngine:
+    public boolean tryRollForJail() {
+        dice.roll();
+        if (dice.isDouble()) {
+            currentPlayer.freeFromJail();
+            return true;
+        }
+        return false;
+    }
+
+    // W GameEngine:
+    public boolean canRollAgain() {
+        return this.dice.isDouble(); // W przyszłości można tu dodać inne zasady!
     }
 
     /**

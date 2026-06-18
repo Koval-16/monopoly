@@ -102,4 +102,12 @@ public class InJailState implements PlayerState {
         // Koniec tury (brak dodatkowego rzutu)
         engine.endTurn();
     }
+
+    // W InJailState:
+    @Override
+    public boolean isInJail() {
+        return true;
+    }
+
+
 }

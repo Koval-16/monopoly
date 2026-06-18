@@ -45,4 +45,8 @@ public abstract class Field {
      */
     public abstract void onLand(Player player, TurnContext ctx, GameEngine engine);
 
+    // W klasie bazowej Field.java:
+    public boolean isPurchasable() { return false; }
+    public boolean isCardField() { return false; }
+
 }

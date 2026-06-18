@@ -110,6 +110,33 @@ public class Player {
         }
     }
 
+    public void payBail() {
+        this.payMoney(100);
+        this.changeState(new com.game.monopoly.player.state.ActiveState());
+    }
+
+    public void useJailCard() {
+        this.removeOutOfJailCards(1);
+        this.changeState(new com.game.monopoly.player.state.ActiveState());
+    }
+
+    public void freeFromJail() {
+        this.changeState(new com.game.monopoly.player.state.ActiveState());
+    }
+
+    // W Player:
+    public boolean isInJail() {
+        return currentState.isInJail();
+    }
+
+    public boolean canPayBail() {
+        return this.balance >= 100; // lub odniesienie do jakiejś stałej w silniku
+    }
+
+    public boolean hasOutOfJailCard(){
+        return this.getOutOfJailCards >0;
+    }
+
     /**
      * Zwraca obecny indeks pola, na którym stoi gracz.
      */

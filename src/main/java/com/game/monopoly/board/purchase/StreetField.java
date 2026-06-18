@@ -2,6 +2,7 @@ package com.game.monopoly.board.purchase;
 
 import com.game.monopoly.engine.GameEngine;
 import com.game.monopoly.engine.TurnContext;
+import com.game.monopoly.player.Player;
 
 public class StreetField extends PurchaseField {
 
@@ -54,7 +55,40 @@ public class StreetField extends PurchaseField {
         return this.rentPrices[0];
     }
 
-    private boolean ownsAllInColorGroup() {
+    @Override
+    public boolean canBeMortgaged() {
+        // Ulicę można zastawić tylko gdy nie jest zastawiona ORAZ nie ma budynków!
+        return !this.isMortgaged() && this.getHouseCount() == 0 && !this.hasHotel();
+    }
+
+
+    public boolean canBuildHouse(Player player) {
+        return !hasHotel() && houseCount < 4 && player.getBalance() >= housePrice;
+    }
+    public boolean canBuildHotel(Player player) {
+        return !hasHotel() && houseCount == 4 && player.getBalance() >= housePrice;
+    }
+
+    // W StreetField.java:
+    @Override
+    public boolean isBuildableMonopoly() {
+        return this.ownsAllInColorGroup();
+    }
+
+    // W StreetField:
+    public void sellTopBuilding(GameEngine engine) {
+        if (this.hasHotel()) {
+            this.sellHotel(engine);
+        } else if (this.getHouseCount() > 0) {
+            this.sellHouse(engine);
+        }
+    }
+
+    public boolean canSellBuilding() {
+        return this.getHouseCount() > 0 || this.hasHotel();
+    }
+
+    public boolean ownsAllInColorGroup() {
         int count = 0;
 
         for (PurchaseField property : getOwner().getProperties()) {

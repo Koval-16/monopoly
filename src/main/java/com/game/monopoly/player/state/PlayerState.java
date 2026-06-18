@@ -19,4 +19,9 @@ public interface PlayerState {
      */
     void playTurn(Player player, GameEngine engine);
 
+    // W PlayerState:
+    default boolean isInJail() {
+        return false;
+    }
+
 }

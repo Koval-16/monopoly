@@ -78,6 +78,36 @@ public abstract class PurchaseField extends Field {
         }
     }
 
+    public boolean canBeMortgaged() {
+        return !this.isMortgaged; // Zwykłe pole można zastawić, jeśli nie jest zastawione
+    }
+
+    // W PurchaseField.java:
+    public boolean isBuildableMonopoly() {
+        return false;
+    }
+
+    // W PurchaseField:
+    public int getMortgageValue() {
+        return this.price / 2;
+    }
+
+    // W PurchaseField:
+    public boolean canBeUnmortgagedBy(Player player) {
+        return this.isMortgaged() && player.getBalance() >= this.getUnmortgageCost();
+    }
+
+    public boolean isOwned() {
+        return this.owner != null;
+    }
+
+    public boolean canBeBoughtBy(Player player) {
+        return !this.isOwned() && player.getBalance() >= this.price;
+    }
+
+    @Override
+    public boolean isPurchasable() { return true; }
+
     public Player getOwner() {
         return owner;
     }
@@ -92,5 +122,9 @@ public abstract class PurchaseField extends Field {
 
     public boolean isMortgaged() {
         return isMortgaged;
+    }
+
+    public int getUnmortgageCost() {
+        return (this.price / 2) + (int)((this.price / 2) * 0.1);
     }
 }

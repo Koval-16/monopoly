@@ -55,4 +55,17 @@ public class CardField extends ActionField {
         }
         return null;
     }
+
+    // Wewnątrz CardField:
+    public Card drawAndExecute(Player player, GameEngine engine) {
+        Card drawnCard = drawCard(engine);
+        if (drawnCard != null) {
+            drawnCard.executeAction(player, engine);
+            returnCardToDeck(drawnCard, engine);
+        }
+        return drawnCard;
+    }
+
+    @Override
+    public boolean isCardField() { return true; }
 }
